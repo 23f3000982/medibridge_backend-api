@@ -46,8 +46,11 @@ export function setupAdminWS(io) {
         })
 
         // fetch all Images
-        socket.on("allImages", async () => {
-            const allImages = await getAllImages();
+        socket.on("allImages", async (data) => {
+            // Ensure it's always a boolean
+            const forceFetch = !!data?.forceFetch;
+
+            const allImages = await getAllImages(forceFetch);
             if (!allImages) {
                 socket.emit("error", "No images found");
                 return;

@@ -7,11 +7,11 @@ const allImagesCache = {
     fetchingPromise: null, // track ongoing fetch
 };
 
-export async function getAllImages() {
+export async function getAllImages(forceFetch = false) {
     const currTime = Date.now();
 
     // ✅ if cache is still valid → return cached data
-    if (allImagesCache.data && (currTime - allImagesCache.lastFetchedAT < 5 * 60 * 1000)) {
+    if (allImagesCache.data && (currTime - allImagesCache.lastFetchedAT < 5 * 60 * 1000) && !forceFetch) {
         console.log("🗂️  Using cached images data");
         return allImagesCache.data;
     }
