@@ -1,0 +1,33 @@
+{
+    "name": "medibridge_backend",
+    "version": "1.0.0",
+    "description": "",
+    "main": "main.js",
+    "type": "module",
+    "scripts": {
+        "start": "node src/main.js",
+        "dev": "nodemon src/main.js"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "dependencies": {
+        "@irys/upload": "^0.0.15",
+        "@irys/upload-solana": "^0.1.8",
+        "axios": "^1.7.9",
+        "compression": "^1.8.0",
+        "cors": "^2.8.5",
+        "d": "^1.0.2",
+        "express": "^4.18.2",
+        "helmet": "^8.1.0",
+        "http": "^0.0.1-security",
+        "jsonwebtoken": "^9.0.2",
+        "morgan": "^1.10.0",
+        "multer": "^2.0.2",
+        "nodemon": "^3.1.9",
+        "pg": "^8.14.1",
+        "sequelize": "^6.37.7",
+        "sharp": "^0.34.3",
+        "socket.io": "^4.8.1"
+    }
+}
