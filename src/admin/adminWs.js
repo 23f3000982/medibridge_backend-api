@@ -1,10 +1,8 @@
 // ws/adminWS.ts
-import jwt from "jsonwebtoken";
-import { JWT_SECRET } from "../constant.js";
 import { sequelize } from "../utils/postgress/postgress.js";
 import { QueryTypes } from "sequelize";
 import { adminData, getWithToken } from "../utils/classes/adminData.js";
-import { getAllImages } from "./cache.js";
+import { getAllImages } from "../utils/cache/cache.js";
 
 const activeUsers = new Map(); // userId -> Set of tokens
 

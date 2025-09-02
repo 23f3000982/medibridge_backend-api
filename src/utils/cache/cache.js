@@ -1,5 +1,5 @@
 import { QueryTypes } from "sequelize";
-import { sequelize } from "../utils/postgress/postgress.js";
+import { sequelize } from "../postgress/postgress.js";
 
 const allImagesCache = {
     lastFetchedAT: 0,
@@ -25,12 +25,11 @@ export async function getAllImages(forceFetch = false) {
 
     try {
         // ✅ mark fetch as in progress
-        allImagesCache.fetchingPromise = sequelize.query(
+        allImagesCache.fetchingPromise = true
+        const allImages = await sequelize.query(
             `SELECT * FROM medibridge.images`,
             { type: QueryTypes.SELECT }
         );
-
-        const allImages = await allImagesCache.fetchingPromise;
 
         if (!allImages) {
             allImagesCache.fetchingPromise = null;

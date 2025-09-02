@@ -15,6 +15,7 @@ import packageRouter from "./uiEndpoints/package.js";
 import homepageRouter from "./uiEndpoints/homepage.js";
 import departmentRouter from "./uiEndpoints/department.js";
 import uploadImageRouter from "./admin/uploadImage.js";
+import { updateBlurHash } from "./utils/irys/imageHash.js";
 
 const app = express();
 const server = createServer(app);
@@ -74,8 +75,9 @@ app.use((err, req, res, next) => {
     return;
 });
 // Start HTTP & WebSocket Server
-server.listen(PORT, () => {
+server.listen(PORT, async () => {
     console.log(`Server is running on http://localhost:${PORT}`);
+    // await updateBlurHash()
 });
 
 // export default app;
