@@ -15,7 +15,7 @@ import packageRouter from "./uiEndpoints/package.js";
 import homepageRouter from "./uiEndpoints/homepage.js";
 import departmentRouter from "./uiEndpoints/department.js";
 import uploadImageRouter from "./admin/uploadImage.js";
-import { updateBlurHash } from "./utils/irys/imageHash.js";
+// import { updateBlurHash } from "./utils/irys/imageHash.js";
 
 const app = express();
 const server = createServer(app);

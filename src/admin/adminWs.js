@@ -2,7 +2,8 @@
 import { sequelize } from "../utils/postgress/postgress.js";
 import { QueryTypes } from "sequelize";
 import { adminData, getWithToken } from "../utils/classes/adminData.js";
-import { getAllImages } from "../utils/cache/cache.js";
+import { getAllDepartments, getAllImages } from "../utils/cache/cache.js";
+import { updateDepartment } from "../utils/adminFn/updateDepartment.js";
 
 const activeUsers = new Map(); // userId -> Set of tokens
 
@@ -30,18 +31,16 @@ export function setupAdminWS(io) {
             liveUsers: activeUsers.size,
         });
 
-        // all departments
-        const allDepartments = await sequelize.query(
-            `SELECT * FROM medibridge.departments`,
-            { type: QueryTypes.SELECT }
-        );
-        if (!allDepartments) {
-            socket.emit("error", "No departments found");
-            return;
-        }
-        socket.emit("allDepartments", {
-            departments: allDepartments,
-        })
+        socket.on("allDepartments", async () => {
+            // all departments
+            const allDepartments = await getAllDepartments();
+            if (!allDepartments) {
+                socket.emit("error", "No departments found");
+                return;
+            }
+            socket.emit("allDepartments", allDepartments);
+
+        });
 
         // fetch all Images
         socket.on("allImages", async (data) => {
@@ -55,6 +54,37 @@ export function setupAdminWS(io) {
             }
             socket.emit("allImages", allImages);
         });
+
+
+        //update
+        // 1. departments
+        socket.on("updateDepartment", async (data) => {
+            if (!data) {
+                socket.emit("updateDepartmentError", {
+                    success: false,
+                    message: "No data provided",
+                });
+                return;
+            }
+
+            const updateReturn = await updateDepartment(data);
+
+            if (!updateReturn) {
+                socket.emit("updateDepartmentError", {
+                    success: false,
+                    message: "Failed to update department",
+                });
+                return;
+            }
+
+            socket.emit("departmentUpdated", {
+                success: true,
+                message: "Department updated successfully",
+            });
+
+            const newDepartments = await getAllDepartments(true);
+            adminWS.emit("allDepartments", newDepartments);
+        })
 
 
         socket.on("disconnect", async () => {
