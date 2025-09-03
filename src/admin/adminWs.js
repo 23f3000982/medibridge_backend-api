@@ -4,6 +4,7 @@ import { QueryTypes } from "sequelize";
 import { adminData, getWithToken } from "../utils/classes/adminData.js";
 import { getAllDepartments, getAllImages } from "../utils/cache/cache.js";
 import { updateDepartment } from "../utils/adminFn/updateDepartment.js";
+import { getAllParameters } from "../utils/cache/parameters.js";
 
 const activeUsers = new Map(); // userId -> Set of tokens
 
@@ -31,6 +32,7 @@ export function setupAdminWS(io) {
             liveUsers: activeUsers.size,
         });
 
+        // fetch all Departments
         socket.on("allDepartments", async () => {
             // all departments
             const allDepartments = await getAllDepartments();
@@ -55,6 +57,18 @@ export function setupAdminWS(io) {
             socket.emit("allImages", allImages);
         });
 
+        //fetch all Parameters
+        socket.on("allParameters", async (data) => {
+            // Ensure it's always a boolean
+            const forceFetch = !!data?.forceFetch;
+
+            const allParameters = await getAllParameters(forceFetch);
+            if (!allParameters) {
+                socket.emit("error", "No parameters found");
+                return;
+            }
+            socket.emit("allParameters", allParameters);
+        });
 
         //update
         // 1. departments

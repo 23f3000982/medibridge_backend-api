@@ -141,3 +141,4 @@ export async function getAllDepartments(forceFetch = false) {
         allDepartmentsCache.fetchingPromise = null;
     }
 }
+
