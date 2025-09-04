@@ -53,7 +53,7 @@ export async function updateOrAddSample(data) {
                 SELECT id, name
                 FROM medibridge.sample_type
                 WHERE id = :id
-          `,
+                `,
                 {
                     replacements: { id },
                     type: sequelize.QueryTypes.SELECT,
@@ -75,14 +75,18 @@ export async function updateOrAddSample(data) {
                 return false;
             }
 
+            const newId = name.replace(/\s+/g, '_').toLowerCase();
             await sequelize.query(
                 `
                 UPDATE medibridge.sample_type
-                SET name = :name, icon = :icon
+                SET
+                    name = :name,
+                    icon = :icon,
+                    id = CASE WHEN :newId != id THEN :newId ELSE id END
                 WHERE id = :id
           `,
                 {
-                    replacements: { name: name.trim(), icon: icon || null, id },
+                    replacements: { name: name.trim(), icon: icon || null, id, newId },
                     transaction: tx,
                 }
             );
