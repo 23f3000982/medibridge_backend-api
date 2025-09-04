@@ -15,6 +15,7 @@ import packageRouter from "./uiEndpoints/package.js";
 import homepageRouter from "./uiEndpoints/homepage.js";
 import departmentRouter from "./uiEndpoints/department.js";
 import uploadImageRouter from "./admin/uploadImage.js";
+import collectionCenterRouter from "./uiEndpoints/collectionCenter.js";
 // import { updateBlurHash } from "./utils/irys/imageHash.js";
 
 const app = express();
@@ -53,7 +54,7 @@ app.use("/test", testRouter);
 app.use("/package", packageRouter);
 app.use("/department", departmentRouter);
 app.use("/homepage", homepageRouter);
-
+app.use("/collectionCenter", collectionCenterRouter);
 
 
 

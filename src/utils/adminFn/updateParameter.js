@@ -21,20 +21,20 @@ export async function updateParameter(data) {
         if ((id === 0 || id === undefined || id === null) && !code) {
             // Optimistic retry: avoid locks; gapless by retrying on (id) conflict
             const sql = `
-        WITH nxt AS (
-          SELECT COALESCE(MAX(id), 0) + 1 AS id
-          FROM medibridge.parameters
-        ),
-        ins AS (
-          INSERT INTO medibridge.parameters (id, name, parameter_code)
-          SELECT id,
-                 :name,
-                 'PMTR' || LPAD(id::text, 3, '0')
-          FROM nxt
-          ON CONFLICT (id) DO NOTHING
-          RETURNING id, parameter_code
-        )
-        SELECT * FROM ins;
+                WITH nxt AS (
+                SELECT COALESCE(MAX(id), 0) + 1 AS id
+                FROM medibridge.parameters
+                ),
+                ins AS (
+                INSERT INTO medibridge.parameters (id, name, parameter_code)
+                SELECT id,
+                        :name,
+                        'PMTR' || LPAD(id::text, 3, '0')
+                FROM nxt
+                ON CONFLICT (id) DO NOTHING
+                RETURNING id, parameter_code
+                )
+                SELECT * FROM ins;
       `;
 
             const maxRetries = 8;

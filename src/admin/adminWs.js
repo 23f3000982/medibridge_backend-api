@@ -6,6 +6,8 @@ import { getAllDepartments, getAllImages } from "../utils/cache/cache.js";
 import { updateDepartment } from "../utils/adminFn/updateDepartment.js";
 import { getAllParameters } from "../utils/cache/parameters.js";
 import { deleteParameter, updateParameter } from "../utils/adminFn/updateParameter.js";
+import { getAllSampleType } from "../utils/cache/sampleType.js";
+import { deleteSample, updateOrAddSample } from "../utils/adminFn/updateOrAddSample.js";
 
 const activeUsers = new Map(); // userId -> Set of tokens
 
@@ -71,6 +73,19 @@ export function setupAdminWS(io) {
             socket.emit("allParameters", allParameters);
         });
 
+        //fetch all Sample Types
+        socket.on("allSampleTypes", async (data) => {
+            // Ensure it's always a boolean
+            const forceFetch = !!data?.forceFetch;
+            const allSampleTypes = await getAllSampleType(forceFetch);
+            if (!allSampleTypes) {
+                socket.emit("error", "No sample types found");
+                return;
+            }
+            socket.emit("allSampleTypes", allSampleTypes);
+        }
+        );
+
         //update
         // 1. departments
         socket.on("updateDepartment", async (data) => {
@@ -126,8 +141,6 @@ export function setupAdminWS(io) {
                 message: "Parameter updated successfully",
             });
 
-            console.log("success donbe")
-
             const newParameters = await getAllParameters(true);
             adminWS.emit("allParameters", newParameters);
         })
@@ -155,6 +168,57 @@ export function setupAdminWS(io) {
 
             const newParameters = await getAllParameters(true);
             adminWS.emit("allParameters", newParameters);
+        });
+
+        //3. Add or update Sample
+        socket.on("updateSample", async (data) => {
+            if (!data) {
+                socket.emit("updateSample", {
+                    success: false,
+                    message: "No data provided",
+                });
+                return;
+            }
+
+            const updateReturn = await updateOrAddSample(data);
+            if (!updateReturn) {
+                socket.emit("updateSample", {
+                    success: false,
+                    message: "Failed to update sample type",
+                });
+                return;
+            }
+            socket.emit("updateSample", {
+                success: true,
+                message: "Sample type updated successfully",
+            });
+            const newSampleTypes = await getAllSampleType(true);
+            adminWS.emit("allSampleTypes", newSampleTypes);
+        });
+        socket.on("deleteSample", async (data) => {
+            if (!data) {
+                socket.emit("deleteSample", {
+                    success: false,
+                    message: "No data provided",
+                });
+                return;
+            }
+
+            const deleteReturn = await deleteSample(data);
+            if (!deleteReturn) {
+                socket.emit("deleteSample", {
+                    success: false,
+                    message: "Failed to delete sample type",
+                });
+                return;
+            }
+            socket.emit("deleteSample", {
+                success: true,
+                message: "Sample type deleted successfully",
+            });
+
+            const newSampleTypes = await getAllSampleType(true);
+            adminWS.emit("allSampleTypes", newSampleTypes);
         });
 
 
