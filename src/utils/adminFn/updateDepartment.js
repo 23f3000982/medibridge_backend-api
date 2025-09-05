@@ -5,7 +5,10 @@ export async function updateDepartment(data) {
     const { id, name, code, image, description } = data;
     if (!id || !name || !code || !image || !description) {
         console.log("Invalid department data:", data);
-        return false;
+        return {
+            success: false,
+            message: "Invalid department data",
+        }
     }
 
     const updateTx = await sequelize.transaction();
@@ -28,19 +31,22 @@ export async function updateDepartment(data) {
         );
         await updateTx.commit();
         isCommited = true;
+        return {
+            success: true,
+            message: "Department updated successfully",
+        }
     } catch (error) {
         console.error("Error in updating the department", data, error)
         await updateTx.rollback();
         isCommited = true
-        return false
+        return {
+            success: false,
+            message: "Error in updating the department",
+        }
     } finally {
         if (!isCommited) {
             await updateTx.rollback();
         }
-        return true
     }
 
-    return false
-    // Proceed with the update logic
-    return true;
 }

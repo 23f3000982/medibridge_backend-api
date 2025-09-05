@@ -11,7 +11,11 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 export async function updateParameter(data) {
     const { name, id, code } = data || {};
     if (!name || typeof name !== "string" || !name.trim()) {
-        return false;
+        console.error("Missing or invalid 'name' for parameter.");
+        return {
+            success: false,
+            message: "Missing or invalid 'name' for parameter.",
+        };
     }
 
     let committed = false;
@@ -48,7 +52,7 @@ export async function updateParameter(data) {
                 if (rows.length) {
                     await tx.commit();
                     committed = true;
-                    return true; // or return rows[0] if you want the new id/code back
+                    return { success: true, message: "Parameter created", parameter: rows[0] };
                 }
 
                 // no row inserted => a concurrent txn won the race; retry
@@ -56,9 +60,11 @@ export async function updateParameter(data) {
             }
 
             // give up after retries
-            await tx.rollback();
-            committed = true;
-            return false;
+            console.error("Failed to create parameter after retries.");
+            return {
+                success: false,
+                message: "Failed to create parameter after retries.",
+            };
         }
 
         // UPDATE path
@@ -77,16 +83,18 @@ export async function updateParameter(data) {
 
         const existing = rows[0]; // <-- SELECT returns an array
         if (!existing) {
-            await tx.rollback();
-            committed = true;
-            return false; // nothing to update
+            console.error("No matching parameter found for update.");
+            return {
+                success: false,
+                message: "No matching parameter found for update.",
+            };
         }
 
         if (existing.name === name) {
             // no change necessary
             await tx.commit();
             committed = true;
-            return false;
+            return { success: true, message: "No changes made to parameter." };
         }
 
         await sequelize.query(
@@ -103,15 +111,13 @@ export async function updateParameter(data) {
 
         await tx.commit();
         committed = true;
-        return true;
+        return { success: true, message: "Parameter updated." };
     } catch (error) {
-        try { await tx.rollback(); } catch { }
         console.error("Error updating parameter:", error);
-        committed = true;
-        return false;
+        return { success: false, message: "Error updating parameter." };
     } finally {
         if (!committed) {
-            try { await tx.rollback(); } catch { }
+            await tx.rollback();
         }
     }
 }
@@ -120,7 +126,10 @@ export async function deleteParameter(data) {
     const { id, name, code } = data || {};
     if (!id || !name || !code) {
         console.error("Missing required fields for deleting parameter.");
-        return false;
+        return {
+            success: false,
+            message: "Missing required fields for deleting parameter.",
+        }
     }
 
     const tx = await sequelize.transaction();
@@ -138,10 +147,10 @@ export async function deleteParameter(data) {
             }
         );
         await tx.commit();
-        return true;
+        return { success: true, message: "Parameter deleted." };
     } catch (error) {
-        try { await tx.rollback(); } catch { }
+        await tx.rollback();
         console.error("Error deleting parameter:", error);
-        return false;
+        return { success: false, message: "Error deleting parameter." };
     }
 }

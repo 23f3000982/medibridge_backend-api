@@ -8,6 +8,8 @@ import { getAllParameters } from "../utils/cache/parameters.js";
 import { deleteParameter, updateParameter } from "../utils/adminFn/updateParameter.js";
 import { getAllSampleType } from "../utils/cache/sampleType.js";
 import { deleteSample, updateOrAddSample } from "../utils/adminFn/updateOrAddSample.js";
+import { updateOrAddTest } from "../utils/adminFn/updateOrAddTest.js";
+import { getAllTests } from "../utils/cache/tests.js";
 
 const activeUsers = new Map(); // userId -> Set of tokens
 
@@ -83,142 +85,83 @@ export function setupAdminWS(io) {
                 return;
             }
             socket.emit("allSampleTypes", allSampleTypes);
-        }
-        );
+        });
+
+        //fetch all Tests
+        socket.on("allTests", async (data) => {
+            // Ensure it's always a boolean
+            const forceFetch = !!data?.forceFetch;
+
+            const allTests = await getAllTests(forceFetch);
+            if (!allTests) {
+                socket.emit("error", "No tests found");
+                return;
+            }
+            socket.emit("allTests", allTests);
+        });
 
         //update
         // 1. departments
         socket.on("updateDepartment", async (data) => {
-            if (!data) {
-                socket.emit("updateDepartment", {
-                    success: false,
-                    message: "No data provided",
-                });
-                return;
-            }
-
             const updateReturn = await updateDepartment(data);
 
-            if (!updateReturn) {
-                socket.emit("updateDepartment", {
-                    success: false,
-                    message: "Failed to update department",
-                });
+            socket.emit("updateDepartment", updateReturn);
+            if (!updateReturn?.success) {
                 return;
             }
-
-            socket.emit("updateDepartment", {
-                success: true,
-                message: "Department updated successfully",
-            });
-
             const newDepartments = await getAllDepartments(true);
             adminWS.emit("allDepartments", newDepartments);
         })
 
         //2. Add or update Paramters
         socket.on("updateParameter", async (data) => {
-            if (!data) {
-                socket.emit("updateParameter", {
-                    success: false,
-                    message: "No data provided",
-                });
-                return;
-            }
-
             const updateReturn = await updateParameter(data);
-
-            if (!updateReturn) {
-                socket.emit("updateParameter", {
-                    success: false,
-                    message: "Failed to update parameter",
-                });
+            socket.emit("updateParameter", updateReturn);
+            if (!updateReturn?.success) {
                 return;
             }
-
-            socket.emit("updateParameter", {
-                success: true,
-                message: "Parameter updated successfully",
-            });
-
             const newParameters = await getAllParameters(true);
             adminWS.emit("allParameters", newParameters);
         })
         socket.on("deleteParameter", async (data) => {
-            if (!data) {
-                socket.emit("deleteParameter", {
-                    success: false,
-                    message: "No data provided",
-                });
-                return;
-            }
-
             const deleteReturn = await deleteParameter(data);
-            if (!deleteReturn) {
-                socket.emit("deleteParameter", {
-                    success: false,
-                    message: "Failed to delete parameter",
-                });
+            socket.emit("deleteParameter", deleteReturn);
+            if (!deleteReturn?.success) {
                 return;
             }
-            socket.emit("deleteParameter", {
-                success: true,
-                message: "Parameter deleted successfully",
-            });
-
             const newParameters = await getAllParameters(true);
             adminWS.emit("allParameters", newParameters);
         });
 
         //3. Add or update Sample
         socket.on("updateSample", async (data) => {
-            if (!data) {
-                socket.emit("updateSample", {
-                    success: false,
-                    message: "No data provided",
-                });
-                return;
-            }
-
             const updateReturn = await updateOrAddSample(data);
-            if (!updateReturn) {
-                socket.emit("updateSample", {
-                    success: false,
-                    message: "Failed to update sample type",
-                });
+            socket.emit("updateSample", updateReturn);
+            if (!updateReturn?.success) {
                 return;
             }
-            socket.emit("updateSample", {
-                success: true,
-                message: "Sample type updated successfully",
-            });
             const newSampleTypes = await getAllSampleType(true);
             adminWS.emit("allSampleTypes", newSampleTypes);
         });
         socket.on("deleteSample", async (data) => {
-            if (!data) {
-                socket.emit("deleteSample", {
-                    success: false,
-                    message: "No data provided",
-                });
-                return;
-            }
-
             const deleteReturn = await deleteSample(data);
-            if (!deleteReturn) {
-                socket.emit("deleteSample", {
-                    success: false,
-                    message: "Failed to delete sample type",
-                });
+            socket.emit("deleteSample", deleteReturn);
+            if (!deleteReturn?.success) {
                 return;
             }
-            socket.emit("deleteSample", {
-                success: true,
-                message: "Sample type deleted successfully",
-            });
-
             const newSampleTypes = await getAllSampleType(true);
             adminWS.emit("allSampleTypes", newSampleTypes);
+        });
+
+        // 4. Add or update the test
+        socket.on("addOrUpdateTest", async (data) => {
+            const response = await updateOrAddTest(data);
+            socket.emit("addOrUpdateTest", response);
+
+            if (response?.success) {
+                const newTests = await getAllTests(true);
+                adminWS.emit("allTests", newTests);
+            }
         });
 
 

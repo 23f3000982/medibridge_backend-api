@@ -3,7 +3,10 @@ import { sequelize } from "../postgress/postgress.js";
 export async function updateOrAddSample(data) {
     if (!data || !data.name) {
         console.error("Missing required fields in sample for adding/updating parameter.");
-        return false;
+        return {
+            success: false,
+            message: "Missing required fields",
+        }
     }
     const { id, name, icon } = data;
     let committed = false;
@@ -29,7 +32,10 @@ export async function updateOrAddSample(data) {
                 console.error("Sample with this name already exists.");
                 try { await tx.rollback(); } catch { }
                 committed = true;
-                return false;
+                return {
+                    success: false,
+                    message: "Sample with this name already exists.",
+                }
             }
 
             const id = name.replace(/\s+/g, '_').toLowerCase();
@@ -46,7 +52,7 @@ export async function updateOrAddSample(data) {
             );
             await tx.commit();
             committed = true;
-            return true;
+            return { success: true, message: "Sample added successfully." };
         } else {
             const rows = await sequelize.query(
                 `
@@ -65,14 +71,17 @@ export async function updateOrAddSample(data) {
             if (!existing) {
                 await tx.rollback();
                 committed = true;
-                return false; // nothing to update
+                return {
+                    success: false,
+                    message: "Sample not found for update.",
+                }
             }
 
             if (existing.name === name && existing.icon === icon) {
                 // no change necessary
                 await tx.commit();
                 committed = true;
-                return false;
+                return { success: true, message: "No changes made." };
             }
 
             const newId = name.replace(/\s+/g, '_').toLowerCase();
@@ -93,7 +102,7 @@ export async function updateOrAddSample(data) {
 
             await tx.commit();
             committed = true;
-            return true;
+            return { success: true, message: "Sample updated successfully." };
         }
 
 
@@ -101,7 +110,10 @@ export async function updateOrAddSample(data) {
         try { await tx.rollback(); } catch { }
         console.error("Error updating or adding Sample:", error, data);
         committed = true;
-        return false;
+        return {
+            success: false,
+            message: "Error updating or adding Sample.",
+        }
     } finally {
         if (!committed) {
             try { await tx.rollback(); } catch { }
@@ -114,7 +126,10 @@ export async function deleteSample(data) {
     const { id, name } = data || {};
     if (!id || !name) {
         console.error("Missing required fields for deleting parameter.");
-        return false;
+        return {
+            success: false,
+            message: "Missing required fields",
+        }
     }
 
     const tx = await sequelize.transaction();
@@ -131,10 +146,10 @@ export async function deleteSample(data) {
             }
         );
         await tx.commit();
-        return true;
+        return { success: true, message: "Sample deleted successfully." };
     } catch (error) {
         try { await tx.rollback(); } catch { }
         console.error("Error deleting parameter:", error);
-        return false;
+        return { success: false, message: "Error deleting Sample." };
     }
 }
