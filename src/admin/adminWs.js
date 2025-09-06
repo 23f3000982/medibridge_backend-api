@@ -8,7 +8,7 @@ import { getAllParameters } from "../utils/cache/parameters.js";
 import { deleteParameter, updateParameter } from "../utils/adminFn/updateParameter.js";
 import { getAllSampleType } from "../utils/cache/sampleType.js";
 import { deleteSample, updateOrAddSample } from "../utils/adminFn/updateOrAddSample.js";
-import { updateOrAddTest } from "../utils/adminFn/updateOrAddTest.js";
+import { deleteTest, updateOrAddTest, updateTestStatus } from "../utils/adminFn/updateOrAddTest.js";
 import { getAllTests } from "../utils/cache/tests.js";
 
 const activeUsers = new Map(); // userId -> Set of tokens
@@ -154,6 +154,16 @@ export function setupAdminWS(io) {
         });
 
         // 4. Add or update the test
+        socket.on("updateTestStatus", async (data) => {
+            const { testId, status } = data;
+            const updateReturn = await updateTestStatus(data);
+            socket.emit("updateTestStatus", updateReturn);
+            if (!updateReturn?.success) {
+                return;
+            }
+            const newTests = await getAllTests(true);
+            adminWS.emit("allTests", newTests);
+        })
         socket.on("addOrUpdateTest", async (data) => {
             const response = await updateOrAddTest(data);
             socket.emit("addOrUpdateTest", response);
@@ -163,8 +173,19 @@ export function setupAdminWS(io) {
                 adminWS.emit("allTests", newTests);
             }
         });
+        socket.on("deleteTest", async (data) => {
+            const { testId } = data;
+            const deleteReturn = await deleteTest(data);
+            socket.emit("deleteTest", deleteReturn);
+            if (!deleteReturn?.success) {
+                return;
+            }
+            const newTests = await getAllTests(true);
+            adminWS.emit("allTests", newTests);
+        });
 
 
+        //disconnect
         socket.on("disconnect", async () => {
             console.log("❌ AdminWS Disconnected:", socket.id);
             activeUsers.get(userId)?.delete(token);

@@ -30,11 +30,18 @@ export async function getAllTests(forceFetch = false) {
         const allTests = await sequelize.query(
             `
             SELECT
-                t.*, 
-                ARRAY_AGG(
-                 p.parameter_code
-                    
-                ) AS parameters  -- Aggregate parameters as JSON objects
+                t.*,
+                COALESCE(
+                    JSONB_AGG(
+                    DISTINCT jsonb_build_object(
+                        'id', p.id,
+                        'name', p.name,
+                        'parameter_code', p.parameter_code
+                    )
+                    ) FILTER (WHERE p.id IS NOT NULL),
+                    '[]'::jsonb
+                ) AS parameters
+
             FROM medibridge.test t
             LEFT JOIN medibridge.test_parameters tp ON t.id = tp.test_id
             LEFT JOIN medibridge.parameters p ON tp.parameter = p.parameter_code
@@ -46,9 +53,9 @@ export async function getAllTests(forceFetch = false) {
 
         const cleanedTests = allTests.map(test => ({
             ...test,
-            // parameters: test.parameters.filter(param =>
-            //     param.name !== null && param.id !== null && param.parameter_code !== null
-            // )
+            parameters: test.parameters.filter(param =>
+                param.name !== null && param.id !== null && param.parameter_code !== null
+            )
         }));
         if (!cleanedTests) {
             allTestCache.fetchingPromise = null;
@@ -59,26 +66,25 @@ export async function getAllTests(forceFetch = false) {
         const mappedTests = cleanedTests.map((test) => {
             const { id, name, crelio_id, department, tat_minutes, sample_id, slug, model_image, icon, description, fasting_required, base_price, status, parameters } = test;
 
-            console.log(test);
 
             const toCache = {
+                id,
                 name,
-                base_price,
-                crelio_id,
-                department,
-                tat_minutes,
-                sample_id,
+                basePrice: base_price,
+                crelioId: crelio_id,
+                department: department,
+                tatMinutes: tat_minutes,
+                sampleId: sample_id,
                 slug,
-                model_image,
+                modelImage: model_image,
                 icon,
                 description,
-                fasting_required,
+                fastingRequired: fasting_required,
                 status,
-                id,
                 parameters: parameters || [],
 
             }
-            console.dir(toCache, { depth: null, colors: true });
+            // console.dir(toCache, { depth: null, colors: true });
             return toCache;
         });
 
