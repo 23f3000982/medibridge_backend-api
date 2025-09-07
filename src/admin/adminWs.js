@@ -10,6 +10,8 @@ import { getAllSampleType } from "../utils/cache/sampleType.js";
 import { deleteSample, updateOrAddSample } from "../utils/adminFn/updateOrAddSample.js";
 import { deleteTest, updateOrAddTest, updateTestStatus } from "../utils/adminFn/updateOrAddTest.js";
 import { getAllTests } from "../utils/cache/tests.js";
+import { getAllBanners } from "../utils/cache/homeBanner.js";
+import { addOrUpdateBanner, deleteBanner } from "../utils/adminFn/addOrUpdateBanner.js";
 
 const activeUsers = new Map(); // userId -> Set of tokens
 
@@ -100,6 +102,21 @@ export function setupAdminWS(io) {
             socket.emit("allTests", allTests);
         });
 
+        //fetch all homepage Banners
+        socket.on("homeBanners", async () => {
+            try {
+                const banners = await getAllBanners();
+                if (!banners) {
+                    socket.emit("error", "No banners found");
+                    return;
+                }
+                socket.emit("homeBanners", banners);
+            } catch (error) {
+                console.error("❌ Error in homeBanners event:", error);
+                socket.emit("error", "Failed to fetch banners");
+            }
+        });
+
         //update
         // 1. departments
         socket.on("updateDepartment", async (data) => {
@@ -184,6 +201,25 @@ export function setupAdminWS(io) {
             adminWS.emit("allTests", newTests);
         });
 
+        // 5. Add or update homepage banner
+        socket.on("addOrUpdateBanner", async (data) => {
+            const updateBannerReturn = await addOrUpdateBanner(data);
+            socket.emit("addOrUpdateBanner", updateBannerReturn);
+            if (!updateBannerReturn?.success) {
+                return;
+            }
+            const newBanners = await getAllBanners(true);
+            adminWS.emit("homeBanners", newBanners);
+        });
+        socket.on("deleteBanner", async (data) => {
+            const deleteBannerReturn = await deleteBanner(data);
+            socket.emit("deleteBanner", deleteBannerReturn);
+            if (!deleteBannerReturn.success) {
+                return;
+            }
+            const newBanners = await getAllBanners(true);
+            adminWS.emit("homeBanners", newBanners);
+        });
 
         //disconnect
         socket.on("disconnect", async () => {
