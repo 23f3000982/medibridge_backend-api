@@ -6,7 +6,7 @@ const BannerCache = {
     data: null,
     fetchingPromise: null, // track ongoing fetch
 };
-const BANNER_CACHE_DURATION_MS = 5 * 60 * 1000; // 5 minutes
+const BANNER_CACHE_DURATION_MS = 10 * 1000; // 10 seconds
 
 export async function getAllBanners(forceFetch = false) {
     const currTime = Date.now();

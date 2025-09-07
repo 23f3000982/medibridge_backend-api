@@ -6,7 +6,7 @@ const sampleTypeCache = {
     data: null,
     fetchingPromise: null, // track ongoing fetch
 };
-const SAMPLE_CACHE_DURATION_MS = 1 * 60 * 1000; // 5 minutes
+const SAMPLE_CACHE_DURATION_MS = 10 * 1000; // 10 seconds
 
 export async function getAllSampleType(forceFetch = false) {
     const currTime = Date.now();

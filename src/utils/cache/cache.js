@@ -6,7 +6,7 @@ const allImagesCache = {
     data: null,
     fetchingPromise: null, // track ongoing fetch
 };
-const IMAGES_CACHE_DURATION_MS = 5 * 60 * 1000; // 5 minutes
+const IMAGES_CACHE_DURATION_MS = 10 * 1000; // 1
 
 export async function getAllImages(forceFetch = false) {
     const currTime = Date.now();
@@ -82,7 +82,7 @@ const allDepartmentsCache = {
     data: null,
     fetchingPromise: null, // track ongoing fetch
 };
-const DEPARTMENTS_CACHE_DURATION_MS = 5 * 60 * 1000; // 5 minutes
+const DEPARTMENTS_CACHE_DURATION_MS = 10 * 1000; // 10 seconds
 
 export async function getAllDepartments(forceFetch = false) {
     const currTime = Date.now();

@@ -6,7 +6,7 @@ const CCCache = {
     data: null,
     fetchingPromise: null, // track ongoing fetch
 };
-const CC_CACHE_DURATION_MS = 5 * 60 * 1000; // 5 minutes
+const CC_CACHE_DURATION_MS = 10 * 1000; // 10 seconds
 
 export async function getAllCollectionCenter(forceFetch = false) {
     const currTime = Date.now();

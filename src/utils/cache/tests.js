@@ -6,7 +6,7 @@ const allTestCache = {
     data: null,
     fetchingPromise: null, // track ongoing fetch
 };
-const TESTS_CACHE_DURATION_MS = 5 * 60 * 1000; // 5 minutes
+const TESTS_CACHE_DURATION_MS = 10 * 1000; // 10 seconds
 
 export async function getAllTests(forceFetch = false) {
     const currTime = Date.now();
@@ -32,15 +32,11 @@ export async function getAllTests(forceFetch = false) {
             SELECT
                 t.*,
                 COALESCE(
-                    JSONB_AGG(
-                    DISTINCT jsonb_build_object(
-                        'id', p.id,
-                        'name', p.name,
-                        'parameter_code', p.parameter_code
-                    )
-                    ) FILTER (WHERE p.id IS NOT NULL),
+                    JSONB_AGG(DISTINCT p.parameter_code)
+                        FILTER (WHERE p.parameter_code IS NOT NULL),
                     '[]'::jsonb
                 ) AS parameters
+
 
             FROM medibridge.test t
             LEFT JOIN medibridge.test_parameters tp ON t.id = tp.test_id

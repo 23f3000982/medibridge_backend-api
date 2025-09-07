@@ -6,7 +6,7 @@ const allParameterCache = {
     data: null,
     fetchingPromise: null, // track ongoing fetch
 };
-const PARAMETERS_CACHE_DURATION_MS = 5 * 60 * 1000; // 5 minutes
+const PARAMETERS_CACHE_DURATION_MS = 10 * 1000; // 10 seconds
 
 export async function getAllParameters(forceFetch = false) {
     const currTime = Date.now();

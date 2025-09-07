@@ -12,6 +12,8 @@ import { deleteTest, updateOrAddTest, updateTestStatus } from "../utils/adminFn/
 import { getAllTests } from "../utils/cache/tests.js";
 import { getAllBanners } from "../utils/cache/homeBanner.js";
 import { addOrUpdateBanner, deleteBanner } from "../utils/adminFn/addOrUpdateBanner.js";
+import { getPopularTests } from "../utils/cache/popularTests.js";
+import { savePopularTests } from "../utils/adminFn/savePopularTest.js";
 
 const activeUsers = new Map(); // userId -> Set of tokens
 
@@ -100,6 +102,14 @@ export function setupAdminWS(io) {
                 return;
             }
             socket.emit("allTests", allTests);
+        });
+        socket.on("popularTests", async () => {
+            const popularTests = await getPopularTests();
+            if (!popularTests) {
+                socket.emit("error", "No popular tests found");
+                return;
+            }
+            socket.emit("popularTests", popularTests);
         });
 
         //fetch all homepage Banners
@@ -219,6 +229,17 @@ export function setupAdminWS(io) {
             }
             const newBanners = await getAllBanners(true);
             adminWS.emit("homeBanners", newBanners);
+        });
+
+        //6. Handle update popularTest chnage
+        socket.on("savePopularTests", async (data) => {
+            const populrTestReturn = await savePopularTests(data);
+            socket.emit("savePopularTests", populrTestReturn);
+            if (!populrTestReturn?.success) {
+                return;
+            }
+            const newPopularTests = await getPopularTests(true);
+            adminWS.emit("popularTests", newPopularTests);
         });
 
         //disconnect
