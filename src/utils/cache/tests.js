@@ -60,7 +60,7 @@ export async function getAllTests(forceFetch = false) {
 
         // ✅ map over the result and rename the property
         const mappedTests = cleanedTests.map((test) => {
-            const { id, name, crelio_id, department, tat_minutes, sample_id, slug, model_image, icon, description, fasting_required, base_price, status, parameters } = test;
+            const { id, name, crelio_id, department, tat, sample_id, slug, model_image, icon, description, fasting_required, base_price, status, parameters } = test;
 
 
             const toCache = {
@@ -69,7 +69,7 @@ export async function getAllTests(forceFetch = false) {
                 basePrice: base_price,
                 crelioId: crelio_id,
                 department: department,
-                tatMinutes: tat_minutes,
+                tat: tat,
                 sampleId: sample_id,
                 slug,
                 modelImage: model_image,

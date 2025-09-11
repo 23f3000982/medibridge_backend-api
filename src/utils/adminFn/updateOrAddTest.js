@@ -2,10 +2,10 @@ import { QueryTypes } from "sequelize";
 import { sequelize } from "../postgress/postgress.js";
 
 export async function updateOrAddTest(testData) {
-    const { id, name, slug, crelioId, department, tatMinutes, sampleId, parameters, icon, modelImage, description, fastingRequired, basePrice } = testData;
+    const { id, name, slug, crelioId, department, tat, sampleId, parameters, icon, modelImage, description, fastingRequired, basePrice } = testData;
 
     const isNew = id ? false : true;
-    if (!name || !slug || !crelioId || !department || !tatMinutes || !sampleId || !basePrice) {
+    if (!name || !slug || !crelioId || !department || !tat || !sampleId || !basePrice) {
         return { success: false, message: "Missing required fields" };
     }
 
@@ -34,7 +34,7 @@ export async function updateOrAddTest(testData) {
                     base_price,
                     crelio_id,
                     department,
-                    tat_minutes,
+                    tat,
                     sample_id,
                     slug,
                     model_image,
@@ -48,7 +48,7 @@ export async function updateOrAddTest(testData) {
                     :basePrice,
                     :crelioId,
                     :departmentCode,
-                    :tatMinutes,
+                    :tat,
                     :sampleId,
                     :slug,
                     :modelImage,
@@ -63,7 +63,7 @@ export async function updateOrAddTest(testData) {
                         basePrice,
                         crelioId,
                         departmentCode: department,
-                        tatMinutes,
+                        tat,
                         sampleId,
                         slug,
                         modelImage: modelImage || null,
@@ -126,7 +126,7 @@ export async function updateOrAddTest(testData) {
                     base_price = :basePrice,
                     crelio_id = :crelioId,
                     department = :departmentCode,
-                    tat_minutes = :tatMinutes,
+                    tat = :tat,
                     sample_id = :sampleId,
                     slug = :slug,
                     model_image = :modelImage,
@@ -141,7 +141,7 @@ export async function updateOrAddTest(testData) {
                         basePrice,
                         crelioId,
                         departmentCode: department,
-                        tatMinutes,
+                        tat,
                         sampleId,
                         slug,
                         modelImage: modelImage || null,

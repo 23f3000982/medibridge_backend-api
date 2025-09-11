@@ -14,6 +14,8 @@ import { getAllBanners } from "../utils/cache/homeBanner.js";
 import { addOrUpdateBanner, deleteBanner } from "../utils/adminFn/addOrUpdateBanner.js";
 import { getPopularTests } from "../utils/cache/popularTests.js";
 import { savePopularTests } from "../utils/adminFn/savePopularTest.js";
+import { deletePackage, updatePackage, updateSubPackage } from "../utils/adminFn/updatePackage.js";
+import { getAllPackages } from "../utils/cache/packages.js";
 
 const activeUsers = new Map(); // userId -> Set of tokens
 
@@ -125,6 +127,19 @@ export function setupAdminWS(io) {
                 console.error("❌ Error in homeBanners event:", error);
                 socket.emit("error", "Failed to fetch banners");
             }
+        });
+
+        //fetch all Packages
+        socket.on("allPackages", async (data) => {
+            // Ensure it's always a boolean
+            const forceFetch = !!data?.forceFetch;
+
+            const allPackages = await getAllPackages(forceFetch);
+            if (!allPackages) {
+                socket.emit("error", "No packages found");
+                return;
+            }
+            socket.emit("allPackages", allPackages);
         });
 
         //update
@@ -240,6 +255,38 @@ export function setupAdminWS(io) {
             }
             const newPopularTests = await getPopularTests(true);
             adminWS.emit("popularTests", newPopularTests);
+        });
+
+        //7. Handle all Packages
+        socket.on("updatePackage", async (data) => {
+            const updatePackageReturn = await updatePackage(data);
+            socket.emit("updatePackage", updatePackageReturn);
+            if (!updatePackageReturn?.success) {
+                return;
+            }
+            // Optionally, you can emit an event to refresh package lists if you have such a cache
+            const newPackages = await getAllPackages(true);
+            adminWS.emit("allPackages", newPackages);
+        });
+        socket.on("deletePackage", async (data) => {
+            const dltPkgReturn = await deletePackage(data);
+            socket.emit("deletePackage", dltPkgReturn);
+            if (!dltPkgReturn?.success) {
+                return;
+            }
+            const newPackages = await getAllPackages(true);
+            adminWS.emit("allPackages", newPackages);
+        });
+
+        // 7.1 Handle subpackage
+        socket.on("updateSubPackage", async (data) => {
+            const updateSubPackageReturn = await updateSubPackage(data);
+            socket.emit("updateSubPackage", updateSubPackageReturn);
+            if (!updateSubPackageReturn?.success) {
+                return;
+            }
+            const newSubPackages = await getAllPackages(true);
+            adminWS.emit("allPackages", newSubPackages);
         });
 
         //disconnect

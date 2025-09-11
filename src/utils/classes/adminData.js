@@ -73,7 +73,9 @@ export async function verifyAdmin(username, password) {
 
     try {
         const [userVerified] = await sequelize.query(
-            `SELECT * FROM admins WHERE LOWER(username) = LOWER(:username) AND password = :password`,
+            `SELECT * 
+            FROM medibridge.admins 
+            WHERE LOWER(username) = LOWER(:username) AND password = :password`,
             {
                 replacements: { username, password },
                 type: sequelize.QueryTypes.SELECT
@@ -84,7 +86,7 @@ export async function verifyAdmin(username, password) {
         }
         const token = jwt.sign(
             {
-                id: userVerified.id,
+                adminId: userVerified.adminId,
                 username: userVerified.username,
             },
             JWT_SECRET,
@@ -92,7 +94,7 @@ export async function verifyAdmin(username, password) {
         );
 
         adminData.addAdmin({
-            id: userVerified.id,
+            adminId: userVerified.adminId,
             username: userVerified.username,
             name: userVerified.name,
             profileImage: userVerified.profile_image,
@@ -115,10 +117,10 @@ export async function getWithToken(token) {
 
     const userDetails = adminData.getAdminData(decoded.username);
     if (!userDetails) {
-        const dbData = await fetchFromDb(decoded.id, decoded.username);
+        const dbData = await fetchFromDb(decoded.adminId, decoded.username);
         if (dbData) {
             adminData.addAdmin({
-                id: dbData.id,
+                adminId: dbData.adminId,
                 username: dbData.username,
                 name: dbData.name,
                 profileImage: dbData.profile_image,
@@ -140,7 +142,7 @@ export async function getWithToken(token) {
 export async function fetchFromDb(id, username) {
     try {
         const [userDetails] = await sequelize.query(
-            `SELECT * FROM admins WHERE id = :id AND LOWER(username) = LOWER(:username)`,
+            `SELECT * FROM medibridge.admins WHERE id = :id AND LOWER(username) = LOWER(:username)`,
             {
                 replacements: { id, username },
                 type: sequelize.QueryTypes.SELECT
