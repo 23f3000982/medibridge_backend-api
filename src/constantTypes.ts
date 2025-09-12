@@ -39,7 +39,7 @@ export type Department = {
 }
 
 export type SampleType = {
-    sampleId: number;
+    sampleId: string;
     name: string;
     icon: string;
 }
@@ -66,6 +66,7 @@ export type Test = {
     parameters: string[]; // Array of associated parameters codes
     createdAt: Date;
     updatedAt: Date;
+    parameterInfo: Parameter[]; // Array of associated parameters with name and code
 }
 
 
@@ -92,7 +93,9 @@ export type SubPackage = {
     description?: string;
     icon: string;
     modelImage: string;
-    testIds: number[]; // Array of associated testIds
+    testIds: number[]; // Array of associated testIds\
+    testInfo: { [key: string]: Test },
+    totalParameters: number;
 }
 
 export type HomeBanner = {

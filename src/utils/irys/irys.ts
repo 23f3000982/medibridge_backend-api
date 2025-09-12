@@ -2,7 +2,7 @@ import { Uploader } from "@irys/upload";
 import Solana from "@irys/upload-solana";
 import fs from "fs";
 import mime from 'mime-types';
-
+import bs58 from "bs58";
 
 const uploaderKeypair = JSON.parse(fs.readFileSync("./files/PQUAS24P1LDvfcutgYNJjMg2QczT5oa9mjWWvNatevp.json", "utf-8"));
 
@@ -24,14 +24,19 @@ export async function uploadFile(file: string) {
 
     const tags = [{ name: 'Content-Type', value: fileType }];
 
-    const price = await irys.getPrice(size);
-    const balance = await irys.getBalance();
-    if (price > balance) {
-        console.log(`Insufficient balance ${price} , ${balance} , ${Number(price) - Number(balance)} `);
-        const fund = await irys.fund(30 * 1000)
-        // return;
+    const price: BigNumber = await irys.getPrice(size);
+    const balance: BigNumber = await irys.getBalance();
+
+    if (price.isGreaterThan(balance)) {
+        const diff = price.minus(balance);
+        console.log(
+            `Insufficient balance. Price: ${price.toString()}, Balance: ${balance.toString()}, Missing: ${diff.toString()}`
+        );
+        // Example funding (30,000 in base units)
+        const fund = await irys.fund(30 * 1000);
     }
 
+    console.log("price", price, "balance", balance, "balanceLeft", balance.minus(price));
 
     const newUploadedData = await irys.uploadFile(fileToUpload, { tags: tags });
     let newUrl = `https://uploader.irys.xyz/${newUploadedData.id}`;
