@@ -182,17 +182,35 @@ export async function getAllTests(forceFetch = false) {
                     JSONB_AGG(DISTINCT p.parameter_code)
                         FILTER (WHERE p.parameter_code IS NOT NULL),
                     '[]'::jsonb
-                ) AS parameters
-
+                ) AS parameters,
+                COALESCE(
+                    JSONB_AGG(
+                        DISTINCT 
+                        JSONB_BUILD_OBJECT(
+                            'name', p.name,
+                            'parameter_code', p.parameter_code
+                        ) 
+                        -- Apply FILTER after the aggregation
+                    ) FILTER (WHERE p.parameter_code IS NOT NULL),
+                    '[]'::jsonb
+                ) AS parameter_info
             FROM medibridge.test t
             LEFT JOIN medibridge.test_parameters tp ON t.test_id = tp.test_id
             LEFT JOIN medibridge.parameters p ON tp.parameter_code = p.parameter_code
             GROUP BY t.test_id
-            ORDER BY t.test_id ASC
+            ORDER BY t.test_id ASC;
+
+
             `, { type: QueryTypes.SELECT });
         // ✅ map over the result and rename the property
         const mappedTests = allTests.map((test) => {
-            const { test_id, name, slug, base_price, crelio_id, dept_code, tat, sample_id, model_image, icon, description, fasting_required, created_at, updated_at, parameters } = test;
+            const { test_id, name, slug, base_price, crelio_id, dept_code, tat, sample_id, model_image, icon, description, fasting_required, created_at, updated_at, parameters, parameter_info } = test;
+            const parameterInfoWithFallback = (parameter_info && parameter_info.length > 0)
+                ? parameter_info
+                : [{
+                        name: name, // Use the test name
+                        parameter_code: null // parameter code is null
+                    }];
             const toCache = {
                 testId: test_id,
                 name: name,
@@ -209,6 +227,7 @@ export async function getAllTests(forceFetch = false) {
                 parameters: parameters || [],
                 createdAt: created_at,
                 updatedAt: updated_at,
+                parameterInfo: parameterInfoWithFallback || [],
             };
             return toCache;
         });
@@ -252,7 +271,9 @@ export async function getAllPackages(forceFetch = false) {
             LEFT JOIN medibridge.sub_package_tests st ON st.sub_package_id = s.sub_package_id
             GROUP BY p.package_id, s.sub_package_id
             ORDER BY p.package_id ASC;
+
             `, { type: QueryTypes.SELECT });
+        const allTests = await getAllTests();
         let toCache = [];
         allPackages.forEach((pkg) => {
             const { package_id, name, title, slug, description, icon, model_image, sub_package_id, sub_package_name, sub_package_slug, sub_package_title, sub_package_crelio_id, sub_package_price, sub_package_tat, sub_package_description, sub_package_icon, sub_package_model_image, sub_package_test_id } = pkg;
@@ -273,6 +294,15 @@ export async function getAllPackages(forceFetch = false) {
             if (sub_package_id && sub_package_name && existingPackage.subPackages) {
                 const subPkgExists = existingPackage.subPackages.find(sp => sp.subPackageId === sub_package_id);
                 if (!subPkgExists) {
+                    let allTestPackages = {};
+                    let paramterCount = 0;
+                    for (let testId of sub_package_test_id || []) {
+                        const testDetails = allTests.find((t) => t.testId === testId);
+                        if (testDetails) {
+                            allTestPackages = { ...allTestPackages, [testId]: testDetails.parameterInfo };
+                            paramterCount += (testDetails.parameterInfo?.length || 0);
+                        }
+                    }
                     existingPackage.subPackages.push({
                         subPackageId: sub_package_id,
                         name: sub_package_name,
@@ -285,7 +315,9 @@ export async function getAllPackages(forceFetch = false) {
                         description: sub_package_description,
                         icon: sub_package_icon,
                         modelImage: sub_package_model_image,
-                        testIds: sub_package_test_id || []
+                        testIds: sub_package_test_id || [],
+                        testInfo: allTestPackages,
+                        totalParameters: paramterCount
                     });
                 }
             }
@@ -402,6 +434,45 @@ export async function getPopularTests(forceFetch = false) {
     finally {
         // ✅ clear the promise so new fetches can start
         UnifiedCache.setFetchingStatus("popularTests", false);
+    }
+}
+// Popular Packages Cache
+export async function getPopularPackages(forceFetch = false) {
+    let popularPackages = await UnifiedCache.getData("popularPackages");
+    if (popularPackages && !forceFetch) {
+        console.log("🗂️  Using cached popular tests data");
+        return popularPackages;
+    }
+    UnifiedCache.setFetchingStatus("popularPackages", true);
+    try {
+        const popularPackages = await sequelize.query(`
+            SELECT
+                pp.id AS position,
+                pp.sub_pkg_id
+
+            FROM medibridge.popular_package pp
+            ORDER BY pp.id ASC
+            `, { type: QueryTypes.SELECT });
+        if (!popularPackages) {
+            return [];
+        }
+        const allPackages = await getAllPackages();
+        const mappedPopularPackages = popularPackages.reduce((acc, pkg) => {
+            const { position, sub_pkg_id } = pkg;
+            const packageData = allPackages.flatMap(p => p.subPackages || []).find(sp => sp.subPackageId === sub_pkg_id);
+            acc[position] = packageData;
+            return acc;
+        }, {});
+        UnifiedCache.setData("popularPackages", mappedPopularPackages);
+        return mappedPopularPackages;
+    }
+    catch (error) {
+        console.error("❌ Error fetching popular packages:", error);
+        return [];
+    }
+    finally {
+        // ✅ clear the promise so new fetches can start
+        UnifiedCache.setFetchingStatus("popularPackages", false);
     }
 }
 // All Collection Centers

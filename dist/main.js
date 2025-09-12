@@ -12,10 +12,11 @@ import imageHandler from "./uiEndpoints/imageHandler.js";
 import uploadImageRouter from "./admin/uploadImage.js";
 import { setupAdminWS } from "./admin/adminWs.js";
 import testRouter from "./uiEndpoints/tests.js";
-import packageRouter from "./uiEndpoints/package.js";
-import homepageRouter from "./uiEndpoints/homepage.js";
+import homepageRouter from "./uiEndpoints/homeBanner.js";
 import departmentRouter from "./uiEndpoints/department.js";
 import collectionCenterRouter from "./uiEndpoints/collectionCenter.js";
+import popularTestRouter from "./uiEndpoints/popularTests.js";
+import PopularPackagesRouter from "./uiEndpoints/popularPackages.js";
 // import { updateBlurHash } from "./utils/irys/imageHash";
 // create express app and HTTP server
 const app = express();
@@ -48,10 +49,11 @@ app.use("/admin/login", adminLogin);
 app.use("/images", imageHandler);
 app.use("/uploadImage", uploadImageRouter);
 // UI Endpoints
-app.use("/test", testRouter);
-app.use("/package", packageRouter);
-app.use("/department", departmentRouter);
 app.use("/homeBanners", homepageRouter);
+app.use("/popularTests", popularTestRouter);
+app.use("/popularPackages", PopularPackagesRouter);
+app.use("/test", testRouter);
+app.use("/department", departmentRouter);
 app.use("/collectionCenter", collectionCenterRouter);
 // root endpoint
 app.get("/", async (req, res) => {

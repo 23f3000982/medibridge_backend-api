@@ -1,6 +1,6 @@
 import express from 'express';
-import { getAllTests, getPopularPackages } from '../utils/cache/cache';
-import { SubPackage } from '../constantTypes';
+import { getAllTests, getPopularPackages } from '../utils/cache/cache.js';
+import { SubPackage } from '../constantTypes.js';
 
 const PopularPackagesRouter = express.Router();
 
@@ -20,23 +20,27 @@ PopularPackagesRouter.use(async (req, res) => {
             const pkg: SubPackage = allPopularPackages[key]; // Get the package using the key
             const allTests = Object.values(pkg.testInfo)
             const ParamterCount = pkg.totalParameters
+
+            console.log("Popular Package:", pkg);
             return {
                 name: pkg.name,
                 slug: `${pkg.slug}`,
                 title: pkg.title,
+                basePrice: pkg.basePrice,
                 price: pkg.price,
                 tat: pkg.tat,
                 description: pkg.description,
                 icon: pkg.icon,
                 modelImage: pkg.modelImage,
                 totalTests: pkg.testInfo.length,
-                tests: allTests,
                 totalParameters: ParamterCount,
+                samples: pkg.samples,
+                tests: allTests,
             };
         });
 
 
-    res.status(501).send(PopularPackagesInfo);
+    res.status(200).send(PopularPackagesInfo);
 });
 
 export default PopularPackagesRouter;

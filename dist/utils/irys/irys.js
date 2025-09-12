@@ -16,11 +16,13 @@ export async function uploadFile(file) {
     const tags = [{ name: 'Content-Type', value: fileType }];
     const price = await irys.getPrice(size);
     const balance = await irys.getBalance();
-    if (price > balance) {
-        console.log(`Insufficient balance ${price} , ${balance} , ${Number(price) - Number(balance)} `);
+    if (price.isGreaterThan(balance)) {
+        const diff = price.minus(balance);
+        console.log(`Insufficient balance. Price: ${price.toString()}, Balance: ${balance.toString()}, Missing: ${diff.toString()}`);
+        // Example funding (30,000 in base units)
         const fund = await irys.fund(30 * 1000);
-        // return;
     }
+    console.log("price", price, "balance", balance, "balanceLeft", balance.minus(price));
     const newUploadedData = await irys.uploadFile(fileToUpload, { tags: tags });
     let newUrl = `https://uploader.irys.xyz/${newUploadedData.id}`;
     console.log(file, newUrl);

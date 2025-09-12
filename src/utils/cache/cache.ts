@@ -242,6 +242,7 @@ export async function getAllTests(forceFetch = false) {
             { type: QueryTypes.SELECT }
         );
 
+        const allSamples = await getAllSamples();
         // ✅ map over the result and rename the property
         const mappedTests = allTests.map((test: any) => {
             const {
@@ -263,11 +264,15 @@ export async function getAllTests(forceFetch = false) {
                 parameter_info
             } = test;
 
+            const sampleDetails = allSamples.find((sample: SampleType) => sample.sampleId === sample_id);
             const parameterInfoWithFallback = (parameter_info && parameter_info.length > 0)
-                ? parameter_info
+                ? parameter_info.map((p: any) => ({
+                    name: p.name,
+                    parameterCode: p.parameter_code ?? null, // normalize key
+                }))
                 : [{
-                    name: name,          // Use the test name
-                    parameter_code: null // parameter code is null
+                    name: name,          // fallback to test name
+                    parameterCode: null, // fallback null
                 }];
 
 
@@ -280,6 +285,7 @@ export async function getAllTests(forceFetch = false) {
                 departmentCode: dept_code,
                 tat: tat,
                 sampleId: sample_id,
+                sampleInfo: sampleDetails,
                 modelImage: model_image,
                 icon: icon,
                 description: description,
@@ -366,19 +372,31 @@ export async function getAllPackages(forceFetch = false) {
                 };
                 toCache.push(existingPackage);
             }
-
             if (sub_package_id && sub_package_name && existingPackage.subPackages) {
                 const subPkgExists = existingPackage.subPackages.find(sp => sp.subPackageId === sub_package_id);
                 if (!subPkgExists) {
                     let allTestPackages = {}
                     let paramterCount = 0
+                    let total_package_price = 0
+                    let sampleTypes: SampleType[] = []
+
                     for (let testId of sub_package_test_id || []) {
-                        const testDetails = allTests.find((t: Test) => t.testId === testId);
+                        const testDetails: Test = allTests.find((t: Test) => t.testId === testId);
                         if (testDetails) {
-                            allTestPackages = { ...allTestPackages, [testId]: testDetails.parameterInfo };
+                            const sampleInfo = testDetails.sampleInfo
+                            sampleInfo ? sampleTypes.push(sampleInfo) : null
+                            total_package_price += testDetails.basePrice || 0
+                            allTestPackages = {
+                                ...allTestPackages, [testId]: {
+                                    name: testDetails.name,
+                                    slug: testDetails.slug,
+                                    paramters: testDetails.parameterInfo
+                                }
+                            };
                             paramterCount += (testDetails.parameterInfo?.length || 0);
                         }
                     }
+
                     existingPackage.subPackages.push({
                         subPackageId: sub_package_id,
                         name: sub_package_name,
@@ -386,14 +404,16 @@ export async function getAllPackages(forceFetch = false) {
                         title: sub_package_title,
                         packageId: package_id,
                         crelioId: sub_package_crelio_id,
+                        basePrice: total_package_price,
                         price: sub_package_price,
                         tat: sub_package_tat,
                         description: sub_package_description,
                         icon: sub_package_icon,
                         modelImage: sub_package_model_image,
                         testIds: sub_package_test_id || [],
-                        testInfo: allTestPackages,
-                        totalParameters: paramterCount
+                        samples: Array.from(new Set(sampleTypes)),
+                        totalParameters: paramterCount,
+                        testInfo: allTestPackages
                     });
                 }
             }

@@ -59,6 +59,7 @@ export type Test = {
     departmentCode: string; // deptCode
     tat: number; // Turnaround time in hours
     sampleId: string; // sampleId
+    sampleInfo?: SampleType; // Associated sample information
     modelImage: string;
     icon: string;
     description?: string;
@@ -88,6 +89,7 @@ export type SubPackage = {
     title: string;
     slug: string;
     crelioId: number;
+    basePrice: number;
     price: number;
     tat: number;
     description?: string;
@@ -96,6 +98,7 @@ export type SubPackage = {
     testIds: number[]; // Array of associated testIds\
     testInfo: { [key: string]: Test },
     totalParameters: number;
+    samples?: SampleType[];
 }
 
 export type HomeBanner = {
