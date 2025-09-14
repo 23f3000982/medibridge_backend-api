@@ -4,7 +4,6 @@ import { Test } from "../../constantTypes.js";
 
 export async function updateTest(testData: Test) {
 
-    console.log("updateOrAddTest called with:", testData);
     const {
         testId,
         name,

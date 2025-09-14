@@ -11,8 +11,6 @@ PopularPackagesRouter.use(async (req, res) => {
     }
 
     const allPopularPackages = await getPopularPackages();
-    // const alllTests = await getAllTests();
-    // console.dir(alllTests.slice(0, 20), { depth: null });
 
     const PopularPackagesInfo = await Object.keys(allPopularPackages)
         .sort()

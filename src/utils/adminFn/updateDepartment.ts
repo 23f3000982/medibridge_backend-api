@@ -5,7 +5,7 @@ export async function updateDepartment(data: any) {
     const { departmentId, deptCode, name, image, description, totalTests } = data;
 
     if (!departmentId || !name || !deptCode || !image || !description || !totalTests) {
-        console.log("Invalid department data:", data);
+        console.error("Invalid department data:", data);
         return {
             success: false,
             message: "Invalid department data",

@@ -24,7 +24,6 @@ export async function updatePopularTest(popularTestdata) {
     }
     let isCommited = false;
     const tx = await sequelize.transaction();
-    console.log(positions);
     try {
         const binds = [];
         const valuesSql = positions.map((p, i) => {

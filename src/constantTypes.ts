@@ -86,8 +86,8 @@ export type SubPackage = {
     subPackageId: number;
     packageId: number;
     name: string;
-    title: string;
     slug: string;
+    title: string;
     crelioId: number;
     basePrice: number;
     price: number;

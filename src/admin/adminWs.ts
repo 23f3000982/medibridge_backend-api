@@ -6,7 +6,7 @@ import { updateDepartment } from "../utils/adminFn/updateDepartment.js";
 import { deleteSample, updateOrAddSample } from "../utils/adminFn/updateOrAddSample.js";
 import { deleteParameter, updateParameter } from "../utils/adminFn/updateParameter.js";
 import { deleteTest, updateTest } from "../utils/adminFn/updateOrAddTest.js";
-import { deletePackage, updatePackage, updateSubPackage } from "../utils/adminFn/updatePackage.js";
+import { deletePackage, deleteSubPackage, updatePackage, updateSubPackage } from "../utils/adminFn/updatePackage.js";
 import { deleteBanner, UpdateBanner } from "../utils/adminFn/updateBanner.js";
 import { updatePopularTest } from "../utils/adminFn/updatePopularTest.js";
 
@@ -146,7 +146,6 @@ export function setupAdminWS(io: Server) {  // Type `io` as Server
                 return;
             }
             const newDepartments = await getAllDepartments(true);
-            console.log(newDepartments);
             adminWS.emit("allDepartments", newDepartments);
         })
 
@@ -240,6 +239,15 @@ export function setupAdminWS(io: Server) {  // Type `io` as Server
             const newSubPackages = await getAllPackages(true);
             adminWS.emit("allPackages", newSubPackages);
         });
+        socket.on("deleteSubPackage", async (data) => {
+            const deleteSubPackageReturn = await deleteSubPackage(data);
+            socket.emit("deleteSubPackage", deleteSubPackageReturn);
+            if (!deleteSubPackageReturn?.success) {
+                return;
+            }
+            const newSubPackages = await getAllPackages(true);
+            adminWS.emit("allPackages", newSubPackages);
+        });
 
         // 6. Add or update homepage banner
         socket.on("updateBanner", async (data) => {
@@ -271,8 +279,6 @@ export function setupAdminWS(io: Server) {  // Type `io` as Server
             const newPopularTests = await getPopularTests(true);
             adminWS.emit("popularTests", newPopularTests);
         });
-
-
 
         //disconnect
         socket.on("disconnect", async () => {

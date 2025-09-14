@@ -11,12 +11,11 @@ popularTestRouter.use(async (req, res) => {
     }
 
     const popularTests: { [key: string]: Test } = await getPopularTests();
-    const allSamples = await getAllSamples();
-    const allDepartments = await getAllDepartments();
     const allPopularTestInfo = await Object.keys(popularTests)
         .sort()
         .map(key => {
-            const test = popularTests[key]; // Get the test using the key
+            const test = popularTests[key];
+            console.log(test);
             return {
                 name: test.name,
                 slug: `${test.slug}`,
@@ -27,7 +26,7 @@ popularTestRouter.use(async (req, res) => {
                 modelImage: test.modelImage,
                 description: test.description,
                 fastingRequired: test.fastingRequired,
-                parameterCount: test.parameters ? test.parameters.length : 0
+                parameterCount: test.parameterInfo ? test.parameterInfo.length : 1
             };
         });
 

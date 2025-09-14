@@ -141,7 +141,8 @@ export async function getAllParameters(forceFetch = false) {
     UnifiedCache.setFetchingStatus("allParameters", true);
     try {
         const allParameters = await sequelize.query(`
-            SELECT * FROM medibridge.parameters
+            SELECT *
+            FROM medibridge.parameters
             ORDER BY parameter_id DESC
             `, { type: QueryTypes.SELECT });
         // ✅ map over the result and rename the property
@@ -202,14 +203,19 @@ export async function getAllTests(forceFetch = false) {
 
 
             `, { type: QueryTypes.SELECT });
+        const allSamples = await getAllSamples();
         // ✅ map over the result and rename the property
         const mappedTests = allTests.map((test) => {
             const { test_id, name, slug, base_price, crelio_id, dept_code, tat, sample_id, model_image, icon, description, fasting_required, created_at, updated_at, parameters, parameter_info } = test;
+            const sampleDetails = allSamples.find((sample) => sample.sampleId === sample_id);
             const parameterInfoWithFallback = (parameter_info && parameter_info.length > 0)
-                ? parameter_info
+                ? parameter_info.map((p) => ({
+                    name: p.name,
+                    parameterCode: p.parameter_code ?? null, // normalize key
+                }))
                 : [{
-                        name: name, // Use the test name
-                        parameter_code: null // parameter code is null
+                        name: name, // fallback to test name
+                        parameterCode: null, // fallback null
                     }];
             const toCache = {
                 testId: test_id,
@@ -220,6 +226,7 @@ export async function getAllTests(forceFetch = false) {
                 departmentCode: dept_code,
                 tat: tat,
                 sampleId: sample_id,
+                sampleInfo: sampleDetails,
                 modelImage: model_image,
                 icon: icon,
                 description: description,
@@ -243,6 +250,80 @@ export async function getAllTests(forceFetch = false) {
         UnifiedCache.setFetchingStatus("allTests", false);
     }
 }
+//SubPackages Cache
+export async function getAllSubPackages(forceFetch = false) {
+    let allSubPackages = await UnifiedCache.getData("allSubPackages");
+    if (allSubPackages && !forceFetch) {
+        console.log("🗂️  Using cached sub-packages data");
+        return allSubPackages;
+    }
+    UnifiedCache.setFetchingStatus("allSubPackages", true);
+    try {
+        const allTests = await getAllTests();
+        const allSubPackages = await sequelize.query(`
+            SELECT
+                s.*,
+                COALESCE(ARRAY_AGG(st.test_id) FILTER (WHERE st.test_id IS NOT NULL), '{}') AS test_ids
+            FROM medibridge.sub_packages s
+            LEFT JOIN medibridge.sub_package_tests st ON st.sub_package_id = s.sub_package_id
+            GROUP BY s.sub_package_id
+            ORDER BY s.sub_package_id ASC;
+            `, { type: QueryTypes.SELECT });
+        // ✅ map over the result and rename the property
+        const mappedSubPackages = allSubPackages.map((subPkg) => {
+            const { test_ids, ...rest } = subPkg;
+            let allTestPackages = {};
+            let parameterCount = 0;
+            let total_package_price = 0;
+            let sampleTypes = [];
+            for (let testId of test_ids || []) {
+                const testDetails = allTests.find((t) => t.testId === testId);
+                if (testDetails) {
+                    const sampleInfo = testDetails.sampleInfo;
+                    sampleInfo ? sampleTypes.push(sampleInfo) : null;
+                    total_package_price += testDetails.basePrice || 0;
+                    allTestPackages = {
+                        ...allTestPackages, [testId]: {
+                            name: testDetails.name,
+                            slug: testDetails.slug,
+                            parameters: testDetails.parameterInfo
+                        }
+                    };
+                    parameterCount += (testDetails.parameterInfo?.length || 0);
+                }
+            }
+            const toCache = {
+                subPackageId: rest.sub_package_id,
+                packageId: rest.package_id,
+                name: rest.name,
+                slug: rest.slug,
+                title: rest.title,
+                crelioId: rest.crelio_id,
+                basePrice: rest.price,
+                price: rest.price,
+                tat: rest.tat,
+                description: rest.description,
+                icon: rest.icon,
+                modelImage: rest.model_image,
+                testIds: test_ids || [],
+                testInfo: allTestPackages,
+                totalParameters: parameterCount,
+                samples: Array.from(new Set(sampleTypes)),
+            };
+            return toCache;
+        });
+        UnifiedCache.setData("allSubPackages", mappedSubPackages);
+        return mappedSubPackages;
+    }
+    catch (error) {
+        console.error("❌ Error fetching sub-packages:", error);
+        return [];
+    }
+    finally {
+        // ✅ clear the promise so new fetches can start
+        UnifiedCache.setFetchingStatus("allSubPackages", false);
+    }
+}
 // Packages Cache
 export async function getAllPackages(forceFetch = false) {
     let allPackages = await UnifiedCache.getData("allPackages");
@@ -252,31 +333,18 @@ export async function getAllPackages(forceFetch = false) {
     }
     UnifiedCache.setFetchingStatus("allPackages", true);
     try {
+        const allSubPackages = await getAllSubPackages();
         const allPackages = await sequelize.query(`
             SELECT
-                p.*,
-                s.sub_package_id AS sub_package_id,
-                s.name AS sub_package_name,
-                s.title AS sub_package_title,
-                s.slug AS sub_package_slug,
-                s.crelio_id AS sub_package_crelio_id,
-                s.price AS sub_package_price,
-                s.tat AS sub_package_tat,
-                s.description AS sub_package_description,
-                s.icon AS sub_package_icon,
-                s.model_image AS sub_package_model_image,
-                COALESCE(ARRAY_AGG(st.test_id) FILTER (WHERE st.test_id IS NOT NULL), '{}') AS sub_package_test_id
+                p.*
             FROM medibridge.packages p
-            LEFT JOIN medibridge.sub_packages s ON s.package_id = p.package_id
-            LEFT JOIN medibridge.sub_package_tests st ON st.sub_package_id = s.sub_package_id
-            GROUP BY p.package_id, s.sub_package_id
-            ORDER BY p.package_id ASC;
-
+            ORDER BY p.name ASC
             `, { type: QueryTypes.SELECT });
         const allTests = await getAllTests();
         let toCache = [];
         allPackages.forEach((pkg) => {
-            const { package_id, name, title, slug, description, icon, model_image, sub_package_id, sub_package_name, sub_package_slug, sub_package_title, sub_package_crelio_id, sub_package_price, sub_package_tat, sub_package_description, sub_package_icon, sub_package_model_image, sub_package_test_id } = pkg;
+            const { package_id, name, title, slug, description, icon, model_image } = pkg;
+            const subPackages = allSubPackages.filter((sp) => sp.packageId === package_id);
             let existingPackage = toCache.find(p => p.packageId === package_id);
             if (!existingPackage) {
                 existingPackage = {
@@ -287,39 +355,9 @@ export async function getAllPackages(forceFetch = false) {
                     description: description,
                     icon: icon,
                     modelImage: model_image,
-                    subPackages: []
+                    subPackages: subPackages,
                 };
                 toCache.push(existingPackage);
-            }
-            if (sub_package_id && sub_package_name && existingPackage.subPackages) {
-                const subPkgExists = existingPackage.subPackages.find(sp => sp.subPackageId === sub_package_id);
-                if (!subPkgExists) {
-                    let allTestPackages = {};
-                    let paramterCount = 0;
-                    for (let testId of sub_package_test_id || []) {
-                        const testDetails = allTests.find((t) => t.testId === testId);
-                        if (testDetails) {
-                            allTestPackages = { ...allTestPackages, [testId]: testDetails.parameterInfo };
-                            paramterCount += (testDetails.parameterInfo?.length || 0);
-                        }
-                    }
-                    existingPackage.subPackages.push({
-                        subPackageId: sub_package_id,
-                        name: sub_package_name,
-                        slug: sub_package_slug,
-                        title: sub_package_title,
-                        packageId: package_id,
-                        crelioId: sub_package_crelio_id,
-                        price: sub_package_price,
-                        tat: sub_package_tat,
-                        description: sub_package_description,
-                        icon: sub_package_icon,
-                        modelImage: sub_package_model_image,
-                        testIds: sub_package_test_id || [],
-                        testInfo: allTestPackages,
-                        totalParameters: paramterCount
-                    });
-                }
             }
         });
         UnifiedCache.setData("allPackages", toCache);
@@ -386,41 +424,38 @@ export async function getPopularTests(forceFetch = false) {
         const popularTests = await sequelize.query(`
             SELECT
                 pt.id AS position,
-                t.*,
-                COALESCE(
-                    JSONB_AGG(DISTINCT p.parameter_code)
-                        FILTER (WHERE p.parameter_code IS NOT NULL),
-                    '[]'::jsonb
-                ) AS parameters
-
+                pt.test_id
             FROM medibridge.popular_test pt
-            LEFT JOIN medibridge.test t ON pt.test_id = t.test_id
-            LEFT JOIN medibridge.test_parameters tp ON pt.test_id = tp.test_id
-            LEFT JOIN medibridge.parameters p ON tp.parameter_code = p.parameter_code
-            GROUP BY pt.id, t.test_id
-            ORDER BY pt.id ASC
             `, { type: QueryTypes.SELECT });
         if (!popularTests) {
             return [];
         }
+        const allTests = await getAllTests(true);
         const mappedPopularTests = popularTests.reduce((acc, test) => {
-            const { position, test_id, name, slug, base_price, crelio_id, dept_code, tat, sample_id, model_image, icon, description, fasting_required, created_at, updated_at, parameters } = test;
+            const { position, test_id } = test;
+            const testDetails = allTests.find((t) => t.testId === test_id);
+            if (testDetails) {
+                acc[position] = testDetails;
+            }
+            const { name, slug, basePrice, crelioId, departmentCode, tat, sampleId, sampleInfo, modelImage, icon, description, fastingRequired, parameters, parameterInfo, createdAt, updatedAt, } = testDetails;
             acc[position] = {
                 testId: test_id,
                 name: name,
                 slug: slug,
-                basePrice: base_price,
-                crelioId: crelio_id,
-                departmentCode: dept_code,
+                basePrice: basePrice,
+                crelioId: crelioId,
+                departmentCode: departmentCode,
                 tat: tat,
-                sampleId: sample_id,
-                modelImage: model_image,
+                sampleId: sampleId,
+                sampleInfo: sampleInfo || null,
+                modelImage: modelImage,
                 icon: icon,
                 description: description,
-                fastingRequired: fasting_required,
+                fastingRequired: fastingRequired,
                 parameters: parameters || [],
-                createdAt: created_at,
-                updatedAt: updated_at,
+                parameterInfo: parameterInfo || [],
+                createdAt: createdAt,
+                updatedAt: updatedAt,
             };
             return acc;
         }, {});
@@ -517,3 +552,4 @@ export async function getAllCollectionCenter(forceFetch = false) {
         UnifiedCache.setFetchingStatus("allCollectionCenters", false);
     }
 }
+// console.log(await getAllSubPackages())

@@ -201,3 +201,46 @@ export async function updateSubPackage(data) {
         }
     }
 }
+export async function deleteSubPackage(data) {
+    const { subPackageId, packageId } = data;
+    console.log("Deleting sub-package:", data);
+    const deleteTx = await sequelize.transaction();
+    let isCommitted = false;
+    try {
+        const currSubPackageDataRaw = await sequelize.query(`
+            SELECT * 
+            FROM medibridge.sub_packages
+            WHERE 
+                sub_package_id = :subPackageId
+                AND package_id = :packageId
+        `, {
+            replacements: { subPackageId, packageId },
+            transaction: deleteTx
+        });
+        if (currSubPackageDataRaw[0].length <= 0) {
+            return { success: false, message: "Sub-package not found" };
+        }
+        const [deleteData] = await sequelize.query(`
+            DELETE FROM medibridge.sub_packages
+            WHERE 
+                sub_package_id = :subPackageId
+                AND package_id = :packageId
+            RETURNING *;
+        `, {
+            replacements: { subPackageId, packageId },
+            transaction: deleteTx
+        });
+        await deleteTx.commit();
+        isCommitted = true;
+        return { success: true, message: "Sub-package deleted successfully" };
+    }
+    catch (error) {
+        console.error("Error deleting sub-package:", error);
+        return { success: false, message: "Failed to delete sub-package" };
+    }
+    finally {
+        if (!isCommitted) {
+            await deleteTx.rollback();
+        }
+    }
+}
