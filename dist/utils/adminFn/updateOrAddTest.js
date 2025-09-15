@@ -1,7 +1,6 @@
 import { QueryTypes } from "sequelize";
 import { sequelize } from "../postgress/postgress.js";
 export async function updateTest(testData) {
-    console.log("updateOrAddTest called with:", testData);
     const { testId, name, slug, basePrice, crelioId, departmentCode, tat, sampleId, modelImage, icon, description, fastingRequired, parameters } = testData;
     const isNew = !testId;
     if (!name || !slug || !crelioId || !departmentCode || !tat || !sampleId || !basePrice) {

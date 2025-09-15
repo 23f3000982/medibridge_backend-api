@@ -17,11 +17,14 @@ import departmentRouter from "./uiEndpoints/department.js";
 import collectionCenterRouter from "./uiEndpoints/collectionCenter.js";
 import popularTestRouter from "./uiEndpoints/popularTests.js";
 import PopularPackagesRouter from "./uiEndpoints/popularPackages.js";
+import packageRouter from "./uiEndpoints/package.js";
 // import { updateBlurHash } from "./utils/irys/imageHash";
 
 // create express app and HTTP server
 const app = express();
 const server = createServer(app);
+
+const allowedOrigins = ["https://www.medibridge.in", "http://localhost:4003"];
 
 // socket.io
 const io = new Server(server, {
@@ -41,7 +44,7 @@ app.use(helmet());
 app.use(compression());
 app.use(express.json());
 app.use(cors({
-  origin: "*",
+  origin: allowedOrigins,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Authorization", "Content-Type", "x-action-type"],
   credentials: true,
@@ -49,6 +52,17 @@ app.use(cors({
 
 // connect to PostgreSQL
 await psqlConnection();
+
+
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if ((origin && allowedOrigins.includes(origin)) || allowedOrigins.includes("*")) {
+    next(); // allow request
+  } else {
+    return res.status(403).json({ message: "Forbidden" });
+  }
+});
+
 
 // admin endpoints
 app.use("/admin/login", adminLogin);
@@ -59,8 +73,10 @@ app.use("/uploadImage", uploadImageRouter);
 app.use("/homeBanners", homepageRouter);
 app.use("/popularTests", popularTestRouter);
 app.use("/popularPackages", PopularPackagesRouter);
-
 app.use("/test", testRouter);
+app.use("/package", packageRouter);
+
+
 app.use("/department", departmentRouter);
 app.use("/collectionCenter", collectionCenterRouter);
 

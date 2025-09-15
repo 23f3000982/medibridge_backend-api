@@ -341,6 +341,7 @@ export async function getAllSubPackages(forceFetch = false) {
 
             let allTestPackages = {}
             let parameterCount = 0
+            let parameters: Parameter[] = []
             let total_package_price = 0
             let sampleTypes: SampleType[] = []
 
@@ -368,7 +369,7 @@ export async function getAllSubPackages(forceFetch = false) {
                 slug: rest.slug,
                 title: rest.title,
                 crelioId: rest.crelio_id,
-                basePrice: rest.price,
+                basePrice: total_package_price,
                 price: rest.price,
                 tat: rest.tat,
                 description: rest.description,

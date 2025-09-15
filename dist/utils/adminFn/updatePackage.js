@@ -203,7 +203,6 @@ export async function updateSubPackage(data) {
 }
 export async function deleteSubPackage(data) {
     const { subPackageId, packageId } = data;
-    console.log("Deleting sub-package:", data);
     const deleteTx = await sequelize.transaction();
     let isCommitted = false;
     try {

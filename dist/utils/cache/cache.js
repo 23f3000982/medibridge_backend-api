@@ -203,7 +203,7 @@ export async function getAllTests(forceFetch = false) {
 
 
             `, { type: QueryTypes.SELECT });
-        const allSamples = await getAllSamples();
+        const allSamples = await getAllSamples(forceFetch);
         // ✅ map over the result and rename the property
         const mappedTests = allTests.map((test) => {
             const { test_id, name, slug, base_price, crelio_id, dept_code, tat, sample_id, model_image, icon, description, fasting_required, created_at, updated_at, parameters, parameter_info } = test;
@@ -259,7 +259,7 @@ export async function getAllSubPackages(forceFetch = false) {
     }
     UnifiedCache.setFetchingStatus("allSubPackages", true);
     try {
-        const allTests = await getAllTests();
+        const allTests = await getAllTests(forceFetch);
         const allSubPackages = await sequelize.query(`
             SELECT
                 s.*,
@@ -274,6 +274,7 @@ export async function getAllSubPackages(forceFetch = false) {
             const { test_ids, ...rest } = subPkg;
             let allTestPackages = {};
             let parameterCount = 0;
+            let parameters = [];
             let total_package_price = 0;
             let sampleTypes = [];
             for (let testId of test_ids || []) {
@@ -299,7 +300,7 @@ export async function getAllSubPackages(forceFetch = false) {
                 slug: rest.slug,
                 title: rest.title,
                 crelioId: rest.crelio_id,
-                basePrice: rest.price,
+                basePrice: total_package_price,
                 price: rest.price,
                 tat: rest.tat,
                 description: rest.description,
@@ -333,14 +334,13 @@ export async function getAllPackages(forceFetch = false) {
     }
     UnifiedCache.setFetchingStatus("allPackages", true);
     try {
-        const allSubPackages = await getAllSubPackages();
+        const allSubPackages = await getAllSubPackages(forceFetch);
         const allPackages = await sequelize.query(`
             SELECT
                 p.*
             FROM medibridge.packages p
             ORDER BY p.name ASC
             `, { type: QueryTypes.SELECT });
-        const allTests = await getAllTests();
         let toCache = [];
         allPackages.forEach((pkg) => {
             const { package_id, name, title, slug, description, icon, model_image } = pkg;
@@ -430,7 +430,7 @@ export async function getPopularTests(forceFetch = false) {
         if (!popularTests) {
             return [];
         }
-        const allTests = await getAllTests(true);
+        const allTests = await getAllTests(forceFetch);
         const mappedPopularTests = popularTests.reduce((acc, test) => {
             const { position, test_id } = test;
             const testDetails = allTests.find((t) => t.testId === test_id);

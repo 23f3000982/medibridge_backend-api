@@ -10,7 +10,6 @@ popularTestRouter.use(async (req, res) => {
         .sort()
         .map(key => {
         const test = popularTests[key];
-        console.log(test);
         return {
             name: test.name,
             slug: `${test.slug}`,

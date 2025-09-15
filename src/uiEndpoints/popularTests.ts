@@ -1,6 +1,6 @@
 import express from "express";
-import { getAllDepartments, getAllSamples, getPopularTests } from "../utils/cache/cache.js";
-import { Department, SampleType, Test } from "../constantTypes.js";
+import { getPopularTests } from "../utils/cache/cache.js";
+import { Test } from "../constantTypes.js";
 
 
 const popularTestRouter = express.Router();
@@ -15,7 +15,6 @@ popularTestRouter.use(async (req, res) => {
         .sort()
         .map(key => {
             const test = popularTests[key];
-            console.log(test);
             return {
                 name: test.name,
                 slug: `${test.slug}`,
