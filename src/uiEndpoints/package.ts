@@ -75,7 +75,7 @@ export function toSendablePackage(pkg: SubPackage) {
         type: subPackageId ? 'subPackage' : 'package',
         name: name,
         slug: slug,
-        price: basePrice,
+        basePrice: basePrice,
         discountedPrice: price,
         tat: tat,
         icon: icon,
