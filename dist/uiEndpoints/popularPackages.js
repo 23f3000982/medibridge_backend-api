@@ -12,20 +12,20 @@ PopularPackagesRouter.use(async (req, res) => {
         .map(key => {
         const pkg = allPopularPackages[key]; // Get the package using the key
         const allTests = Object.values(pkg.testInfo);
-        const ParamterCount = pkg.totalParameters;
+        const parameterCount = pkg.totalParameters;
         // console.log("Popular Package:", pkg);
         return {
             name: pkg.name,
             slug: `${pkg.slug}`,
             title: pkg.title,
             basePrice: pkg.basePrice,
-            price: pkg.price,
+            discountPrice: pkg.price,
             tat: pkg.tat,
             description: pkg.description,
             icon: pkg.icon,
             modelImage: pkg.modelImage,
             totalTests: pkg.testInfo.length,
-            totalParameters: ParamterCount,
+            parameterCount: parameterCount,
             samples: pkg.samples,
             tests: allTests,
         };

@@ -1,16 +1,23 @@
 import express from 'express';
-import { sequelize } from '../utils/postgress/postgress.js';
-import { QueryTypes } from 'sequelize';
+import { getAllDepartments } from '../utils/cache/cache.js';
 const departmentRouter = express.Router();
 // GET /department - Fetch all departments
-departmentRouter.get('/', async (req, res) => {
-    try {
-        const allDepartments = await sequelize.query(`SELECT * FROM departments`, { type: QueryTypes.SELECT });
-        return res.status(200).json(allDepartments);
+departmentRouter.use(async (req, res) => {
+    if (req.method !== 'GET') {
+        return res.status(405).json({ error: 'Method Not Allowed' });
     }
-    catch (err) {
-        console.error(err);
-        return res.status(500).json({ error: "Server error" });
-    }
+    const allDepartments = await getAllDepartments();
+    const toSend = allDepartments.map((dept) => {
+        const { departmentId, deptCode, name, image, imageHash, description, totalTests } = dept;
+        return {
+            name,
+            departmentCode: deptCode,
+            image,
+            imageBlurHash: imageHash,
+            description,
+            totalTests,
+        };
+    });
+    res.json(toSend);
 });
 export default departmentRouter;

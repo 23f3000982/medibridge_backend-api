@@ -18,11 +18,12 @@ import collectionCenterRouter from "./uiEndpoints/collectionCenter.js";
 import popularTestRouter from "./uiEndpoints/popularTests.js";
 import PopularPackagesRouter from "./uiEndpoints/popularPackages.js";
 import packageRouter from "./uiEndpoints/package.js";
+import { setupUiWs } from "./UI/UIWs.js";
 // import { updateBlurHash } from "./utils/irys/imageHash";
 // create express app and HTTP server
 const app = express();
 const server = createServer(app);
-const allowedOrigins = ["https://www.medibridge.in", "http://localhost:4003"];
+const allowedOrigins = "*";
 // socket.io
 const io = new Server(server, {
     cors: {
@@ -32,6 +33,7 @@ const io = new Server(server, {
     },
 });
 setupAdminWS(io);
+setupUiWs(io);
 // middleware
 app.set("trust proxy", true);
 app.use(morgan("common", { skip: (req) => req.url === "/favicon.ico" }));
@@ -65,7 +67,7 @@ app.use("/popularTests", popularTestRouter);
 app.use("/popularPackages", PopularPackagesRouter);
 app.use("/test", testRouter);
 app.use("/package", packageRouter);
-app.use("/department", departmentRouter);
+app.use("/departments", departmentRouter);
 app.use("/collectionCenter", collectionCenterRouter);
 // root endpoint
 app.get("/", async (req, res) => {

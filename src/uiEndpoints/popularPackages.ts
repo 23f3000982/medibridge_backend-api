@@ -17,7 +17,7 @@ PopularPackagesRouter.use(async (req, res) => {
         .map(key => {
             const pkg: SubPackage = allPopularPackages[key]; // Get the package using the key
             const allTests = Object.values(pkg.testInfo)
-            const ParamterCount = pkg.totalParameters
+            const parameterCount = pkg.totalParameters
 
             // console.log("Popular Package:", pkg);
             return {
@@ -31,7 +31,7 @@ PopularPackagesRouter.use(async (req, res) => {
                 icon: pkg.icon,
                 modelImage: pkg.modelImage,
                 totalTests: pkg.testInfo.length,
-                ParamterCount: ParamterCount,
+                parameterCount: parameterCount,
                 samples: pkg.samples,
                 tests: allTests,
             };

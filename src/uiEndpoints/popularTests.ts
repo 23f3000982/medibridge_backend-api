@@ -18,7 +18,7 @@ popularTestRouter.use(async (req, res) => {
             return {
                 name: test.name,
                 slug: `${test.slug}`,
-                price: test.basePrice,
+                price: test.basePrice + 100,
                 discountPrice: test.basePrice,
                 tat: test.tat,
                 icon: test.icon,

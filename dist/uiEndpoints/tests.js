@@ -85,8 +85,8 @@ export function toSendableTest(test) {
     return {
         name: name,
         slug: slug,
-        price: basePrice,
-        discountedPrice: basePrice,
+        price: basePrice + 100,
+        discountPrice: basePrice,
         tat: tat,
         icon: icon,
         modelImage: modelImage,
