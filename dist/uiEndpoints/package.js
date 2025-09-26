@@ -17,7 +17,7 @@ packageRouter.use('/', async (req, res) => {
         if (!packageData) {
             return res.status(404).json({ error: "Package not found" });
         }
-        const toSend = toSendablePackage(packageData);
+        const toSend = toSendableSubPackage(packageData);
         return res.json(toSend);
     }
     else if (pageId) {
@@ -32,7 +32,7 @@ packageRouter.use('/', async (req, res) => {
         }
         const startIndex = (page - 1) * itemsPerPage;
         const paginatedPackages = sortedPackages.slice(startIndex, startIndex + itemsPerPage);
-        const toSend = paginatedPackages.map(pkg => toSendablePackage(pkg));
+        const toSend = paginatedPackages.map(pkg => toSendableSubPackage(pkg));
         return res.json({
             packages: toSend,
             currentPage: page,
@@ -42,21 +42,22 @@ packageRouter.use('/', async (req, res) => {
     return res.status(400).json({ error: "Invalid request" });
 });
 export default packageRouter;
-export function toSendablePackage(pkg) {
+export function toSendableSubPackage(pkg) {
     // console.log("Converting package:", pkg);
-    const { subPackageId, packageId, name, slug, basePrice, price, tat, description, icon, modelImage, testIds, testInfo, totalParameters, samples } = pkg;
+    const { subPackageId, packageId, name, slug, title, crelioId, basePrice, price, tat, description, icon, modelImage, testIds, testInfo, totalParameters, samples } = pkg;
     const allTests = Object.entries(testInfo)
         .map(([id, data]) => (data));
     return {
-        type: subPackageId ? 'subPackage' : 'package',
+        type: 'subPackage',
         name: name,
         slug: slug,
         basePrice: basePrice,
-        discountedPrice: price,
+        discountPrice: price,
         tat: tat,
         icon: icon,
         modelImage: modelImage,
         description: description,
+        totalTests: testInfo.length,
         tests: allTests,
         samples: samples,
         parameterCount: totalParameters

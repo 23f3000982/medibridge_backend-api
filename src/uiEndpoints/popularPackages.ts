@@ -1,6 +1,7 @@
 import express from 'express';
 import { getAllTests, getPopularPackages } from '../utils/cache/cache.js';
 import { SubPackage } from '../constantTypes.js';
+import { toSendableSubPackage } from './package.js';
 
 const PopularPackagesRouter = express.Router();
 
@@ -10,6 +11,14 @@ PopularPackagesRouter.use(async (req, res) => {
         return;
     }
 
+    const toSend = await popularSubPackages();
+    res.json(toSend);
+});
+
+export default PopularPackagesRouter;
+
+
+export const popularSubPackages = async () => {
     const allPopularPackages = await getPopularPackages();
 
     const PopularPackagesInfo = await Object.keys(allPopularPackages)
@@ -20,25 +29,8 @@ PopularPackagesRouter.use(async (req, res) => {
             const parameterCount = pkg.totalParameters
 
             // console.log("Popular Package:", pkg);
-            return {
-                name: pkg.name,
-                slug: `${pkg.slug}`,
-                title: pkg.title,
-                basePrice: pkg.basePrice,
-                discountPrice: pkg.price,
-                tat: pkg.tat,
-                description: pkg.description,
-                icon: pkg.icon,
-                modelImage: pkg.modelImage,
-                totalTests: pkg.testInfo.length,
-                parameterCount: parameterCount,
-                samples: pkg.samples,
-                tests: allTests,
-            };
+            return toSendableSubPackage(pkg);
         });
 
-
-    res.status(200).send(PopularPackagesInfo);
-});
-
-export default PopularPackagesRouter;
+    return PopularPackagesInfo;
+}

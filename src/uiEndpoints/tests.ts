@@ -47,11 +47,7 @@ testRouter.use('/', async (req, res) => {
 
         const paginatedTests = sortedTests.slice(startIndex, endIndex);
         const toSend = paginatedTests.map(test => toSendableTest(test));
-        return res.status(200).json({
-            tests: toSend,
-            currentPage: pageId,
-            totalPages: Math.ceil(allTests.length / defaultLimit),
-        });
+        return res.status(200).json(toSend);
 
 
     }

@@ -1,61 +1,55 @@
-import { getAllTests } from "../utils/cache/cache.js";
-import { toSendableTest } from "../uiEndpoints/tests.js";
+import { filterPackages, filterTests, frequentlyBookedPackagesList, frequentlyBookedTestsList, popularSearchPackagesList, popularSearchTestsList } from "./filterSearch.js";
 export function setupUiWs(io) {
     const UI_WS = io.of("/public");
     UI_WS.on("connection", (socket) => {
         console.log("✅ UI_WS Connected:", socket.id);
-        socket.on("filterTests", async (data) => {
-            const { query } = data;
-            if (!query) {
+        let idleTimer;
+        const resetIdleTimer = () => {
+            if (idleTimer)
+                clearTimeout(idleTimer);
+            idleTimer = setTimeout(() => {
+                console.log(`⚠️ Idle timeout. Disconnecting socket: ${socket.id}`);
+                socket.disconnect(true);
+            }, 60 * 1000); // 1 minute = 60,000 ms
+        };
+        // Initial timer start
+        resetIdleTimer();
+        // 👇 Every event resets the idle timer
+        socket.onAny(() => {
+            resetIdleTimer();
+        });
+        socket.on("getInitalSearchData", async () => {
+            const popularTests = await popularSearchTestsList();
+            console.log("Emitting popular tests:", popularTests.length);
+            socket.emit("popularSearchTests", popularTests);
+            const bookedTests = await frequentlyBookedTestsList();
+            socket.emit("frequentlyBookedTests", bookedTests);
+            const popularPackages = await popularSearchPackagesList();
+            socket.emit("popularSearchPackages", popularPackages);
+            const bookedPackages = await frequentlyBookedPackagesList();
+            socket.emit("frequentlyBookedPackages", bookedPackages);
+        });
+        // Your existing filter listener
+        socket.on("filterSearch", async (data) => {
+            const { type, query } = data;
+            if (!["tests", "packages"].includes(type)) {
                 return socket.emit("filterTests", []);
             }
-            const q = query.toLowerCase();
-            const allTests = await getAllTests();
-            // score each test for better ranking
-            const scored = allTests
-                .map((t) => {
-                const name = String(t?.name ?? "");
-                const slug = String(t?.slug ?? "");
-                const idStr = String(t?.testId ?? "");
-                const nameL = name.toLowerCase();
-                const slugL = slug.toLowerCase();
-                const idL = idStr.toLowerCase();
-                let score = 0;
-                // exact matches
-                if (idL === q)
-                    score = 100;
-                else if (nameL === q)
-                    score = 90;
-                else if (slugL === q)
-                    score = 85;
-                // prefix matches
-                else if (nameL.startsWith(q))
-                    score = 75;
-                else if (slugL.startsWith(q))
-                    score = 70;
-                else if (idL.startsWith(q))
-                    score = 68;
-                // substring matches
-                else if (nameL.includes(q))
-                    score = 60;
-                else if (slugL.includes(q))
-                    score = 55;
-                else if (idL.includes(q))
-                    score = 50;
-                return { test: t, score, name };
-            })
-                .filter((r) => r.score > 0);
-            // sort by score, then by shorter name
-            scored.sort((a, b) => {
-                if (b.score !== a.score)
-                    return b.score - a.score;
-                return a.name.length - b.name.length;
-            });
-            // only top 30
-            const limitedTests = scored.slice(0, 30).map(({ test }) => toSendableTest(test));
-            socket.emit("filterTests", limitedTests);
+            if (type === "tests") {
+                if (!query) {
+                    return socket.emit("filterTests", []);
+                }
+                const filtered = await filterTests(query);
+                socket.emit("filterTests", filtered);
+            }
+            if (type === "packages") {
+                const filtered = await filterPackages(query);
+                socket.emit("filterPackages", filtered);
+            }
         });
+        // On disconnect — clean up the timer
         socket.on("disconnect", () => {
+            clearTimeout(idleTimer);
             console.log("❌ UI_WS Disconnected:", socket.id);
         });
     });
